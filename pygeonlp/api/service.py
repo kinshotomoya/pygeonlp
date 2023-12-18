@@ -21,8 +21,8 @@ class ServiceError(RuntimeError):
 
 
 class LRUCache:
-
-    def __init__(self, capacity: int) -> None:
+    # capacity = -1の時は上限設けない
+    def __init__(self, capacity: int = -1) -> None:
         self._capacity = capacity
         self._dict_cache = collections.OrderedDict()
 
@@ -37,7 +37,7 @@ class LRUCache:
         if self._dict_cache.get(key) != None:
             self._dict_cache.move_to_end(key) 
         else:
-            if len(self._dict_cache) >=  self._capacity:
+            if self._capacity >= 0 and len(self._dict_cache) >=  self._capacity:
                 self._dict_cache.popitem(last=False)
         
             self._dict_cache[key] = value
