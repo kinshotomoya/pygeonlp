@@ -6,6 +6,8 @@ from typing import Union
 
 from pygeonlp import capi
 
+import collections
+
 from pygeonlp.api.metadata import Metadata
 
 logger = getLogger(__name__)
@@ -17,6 +19,28 @@ class ServiceError(RuntimeError):
     """
     pass
 
+
+class LRUCache:
+
+    def __init__(self, capacity: int) -> None:
+        self._capacity = capacity
+        self._dict_cache = collections.OrderedDict()
+
+
+    def get(self, key: str) -> str | None:
+        if self._dict_cache.get(key) != None:
+            self._dict_cache.move_to_end(key)
+            return self._dict_cache.get(key)
+        return None
+
+    def put(self, key: str, value: str) -> None:
+        if self._dict_cache.get(key) != None:
+            self._dict_cache.move_to_end(key) 
+        else:
+            if len(self._dict_cache) >=  self._capacity:
+                self._dict_cache.popitem(last=False)
+        
+            self._dict_cache[key] = value
 
 class Service(object):
     """
@@ -586,13 +610,10 @@ class Service(object):
             return word
 
         dictionary_id = word['dictionary_id']
-        if dictionary_id in self._dict_cache:
-            identifier = self._dict_cache[dictionary_id]
-        else:
-            identifier = self.capi_ma.getDictionaryIdentifierById(
-                dictionary_id)
-
-            self._dict_cache[dictionary_id] = identifier
+        identifier = self._dict_cache.get(dictionary_id)
+        if identifier == None:
+            identifier = self.capi_ma.getDictionaryIdentifierById(dictionary_id)   
+            self._dict_cache.put(dictionary_id, identifier)
 
         word['dictionary_identifier'] = identifier
         return word
